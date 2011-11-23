@@ -59,7 +59,10 @@ sub violates {
     # Find all statements that aren't 'package' statements
     my $stmnts_ref = $doc->find( 'PPI::Statement' );
     return if !$stmnts_ref;
-    my @non_packages = grep { !$_->isa('PPI::Statement::Package') } @{$stmnts_ref};
+    my @non_packages = grep {
+        !$_->isa('PPI::Statement::Package')
+     && !( $_->isa('PPI::Statement::Include') && $_->pragma )
+    } @{$stmnts_ref};
     return if !@non_packages;
 
     # If the 'package' statement is not defined, or the other
