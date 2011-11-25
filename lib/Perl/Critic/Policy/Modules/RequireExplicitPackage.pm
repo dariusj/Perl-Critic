@@ -32,6 +32,12 @@ sub supported_parameters {
             default_string => '1',
             behavior       => 'boolean',
         },
+        {
+            name           => 'exempt_modules',
+            description    => q{Allow the given list of modules to be imported outside a package.},
+            default_string => '',
+            behavior       => 'string list',
+        },
     );
 }
 
@@ -59,7 +65,13 @@ sub violates {
     # Find all statements that aren't 'package' statements
     my $stmnts_ref = $doc->find( 'PPI::Statement' );
     return if !$stmnts_ref;
-    my @non_packages = grep { !$_->isa('PPI::Statement::Package') } @{$stmnts_ref};
+    my @non_packages = grep {
+        my $stmnt = $_;
+        !$stmnt->isa('PPI::Statement::Package')
+     && !( $stmnt->isa('PPI::Statement::Include') && grep {
+            $stmnt->module eq $_
+        } keys $self->{_exempt_modules} )
+    } @{$stmnts_ref};
     return if !@non_packages;
 
     # If the 'package' statement is not defined, or the other
@@ -122,6 +134,11 @@ F<.perlcriticrc> file
 
     [Modules::RequireExplicitPackage]
     exempt_scripts = 0
+
+If you want to exclude specific modules from this rule, you can also make use
+of the following option
+
+    exempt_modules = 'Foo::Bar Baz'
 
 
 =head1 IMPORTANT CHANGES
